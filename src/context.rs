@@ -1,6 +1,8 @@
 use miette::NamedSource;
 use std::path::PathBuf;
 
+use crate::parser::template::{TemplateError, TemplateRoot};
+
 #[derive(Debug, Clone)]
 pub struct ScanContext {
   pub file_path: PathBuf,
@@ -11,6 +13,14 @@ pub struct ScanContext {
   pub lang: ScriptLang,
   pub template_offset: usize,
   pub script_offset: usize,
+  /// The parsed template AST, when a `<template>` block exists and was
+  /// successfully parsed. This is the source of truth for template-level
+  /// rules; the string `template` is kept only for backwards compatibility
+  /// and source-offset calculations.
+  pub template_ast: Option<TemplateRoot>,
+  /// Non-fatal parse errors encountered while parsing the template. Rules
+  /// may inspect or ignore them.
+  pub template_errors: Vec<TemplateError>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,6 +42,8 @@ impl ScanContext {
       lang: ScriptLang::Unknown,
       template_offset: 0,
       script_offset: 0,
+      template_ast: None,
+      template_errors: Vec::new(),
     }
   }
 }

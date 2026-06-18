@@ -649,6 +649,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "oxc_ast_visit"
+version = "0.136.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ca2672d986140e9c03c473203cdb4630f6cc704cddfd6cb753ea770284944bc"
+dependencies = [
+ "oxc_allocator",
+ "oxc_ast",
+ "oxc_span",
+ "oxc_syntax",
+]
+
+[[package]]
 name = "oxc_data_structures"
 version = "0.136.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1260,9 +1272,11 @@ dependencies = [
  "miette",
  "oxc_allocator",
  "oxc_ast",
+ "oxc_ast_visit",
+ "oxc_diagnostics",
  "oxc_parser",
  "oxc_span",
- "regex",
+ "oxc_syntax",
  "rstest",
  "serde",
  "serde_json",
