@@ -1,5 +1,6 @@
 pub mod context;
 pub mod parser;
+pub mod report;
 pub mod rule_id;
 pub mod rules;
 pub mod scanner;

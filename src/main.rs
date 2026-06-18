@@ -3,16 +3,18 @@ use std::path::PathBuf;
 use std::process;
 
 use clap::{Parser, ValueEnum};
+use serde::Serialize;
 
+use vue_scanner::report::sarif;
 use vue_scanner::rules::RuleRegistry;
 use vue_scanner::scanner::Scanner;
 
 #[derive(Parser)]
 #[command(
-    name = "vue-scanner",
-    about = "A high-performance Vue.js SFC scanner with clear, actionable diagnostics",
-    version,
-    long_about = None
+  name = "vue-scanner",
+  about = "A security-focused AST-based static analyser for Vue.js SFCs",
+  version,
+  long_about = None
 )]
 struct Cli {
   #[arg(required_unless_present = "list")]
@@ -29,6 +31,14 @@ struct Cli {
 
   #[arg(long)]
   deny_warnings: bool,
+
+  /// Filter rules by category (security, best-practice, performance, accessibility, architecture).
+  #[arg(long, value_delimiter = ',')]
+  category: Option<Vec<String>>,
+
+  /// Only fail on these severities or higher. Defaults to medium.
+  #[arg(long, value_enum)]
+  min_severity: Option<MinSeverity>,
 }
 
 #[derive(Clone, ValueEnum)]
@@ -36,14 +46,45 @@ enum OutputFormat {
   Pretty,
   Json,
   Minimal,
+  Sarif,
+}
+
+#[derive(Clone, ValueEnum, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum MinSeverity {
+  Info,
+  Low,
+  Medium,
+  High,
+  Critical,
+}
+
+impl MinSeverity {
+  fn as_vue_severity(self) -> vue_scanner::severity::Severity {
+    use vue_scanner::severity::Severity;
+    match self {
+      Self::Info => Severity::Info,
+      Self::Low => Severity::Low,
+      Self::Medium => Severity::Medium,
+      Self::High => Severity::High,
+      Self::Critical => Severity::Critical,
+    }
+  }
 }
 
 fn list_rules(registry: &RuleRegistry) {
   println!("Available rules:\n");
   for rule in registry.get_all() {
-    println!("  {:<35} {}", rule.name(), rule.description());
+    println!(
+      "  {:<40} [{:<7}] {:<5} {}",
+      rule.id().as_str(),
+      format!("{:?}", rule.category()).to_lowercase(),
+      format!("{:?}", rule.severity()).to_lowercase(),
+      rule.description()
+    );
   }
   println!("\nUse --rules <rule1,rule2> to run specific rules.");
+  println!("Use --category <cat1,cat2> to filter by category.");
+  println!("Use --min-severity <level> to fail only on at least this severity.");
 }
 
 fn print_pretty(violations: &[vue_scanner::scanner::Violation]) {
@@ -62,37 +103,34 @@ fn print_pretty(violations: &[vue_scanner::scanner::Violation]) {
     let lines: Vec<&str> = content.lines().collect();
 
     for v in file_violations {
-      let message = format!("{}", v.diagnostic);
-      let severity = v.diagnostic.severity().unwrap_or(miette::Severity::Warning);
+      let message = v.diagnostic_message();
       let help = v.diagnostic.help().map(|h| h.to_string());
 
-      let severity_str = match severity {
-        miette::Severity::Error => "\x1b[1;31merror\x1b[0m",
-        miette::Severity::Warning => "\x1b[1;33mwarning\x1b[0m",
-        _ => "\x1b[1;34minfo\x1b[0m",
+      let severity_str = match v.severity {
+        vue_scanner::severity::Severity::Critical => "\x1b[1;35mcritical\x1b[0m",
+        vue_scanner::severity::Severity::High => "\x1b[1;31mhigh\x1b[0m",
+        vue_scanner::severity::Severity::Medium => "\x1b[1;33mmedium\x1b[0m",
+        vue_scanner::severity::Severity::Low => "\x1b[1;34mlow\x1b[0m",
+        vue_scanner::severity::Severity::Info => "\x1b[1;32minfo\x1b[0m",
       };
 
-      let mut line_no: usize = 0;
-      let mut col: usize = 0;
-
-      if let Some(labels) = v.diagnostic.labels() {
-        for label in labels {
-          let span = label.inner();
-          let offset = span.offset();
-          let before = &content[..offset];
-          line_no = before.matches('\n').count() + 1;
-          let line_start = before.rfind('\n').map(|p| p + 1).unwrap_or(0);
-          col = offset - line_start + 1;
-        }
-      }
-
-      let loc = if line_no > 0 {
-        format!(":{}", line_no)
+      let (line_no, col) = if v.span_offset() == 0 && v.span_len() == 0 {
+        (0, 0)
       } else {
-        String::new()
+        let offset = v.span_offset();
+        let before = &content[..offset.min(content.len())];
+        let ln = before.matches('\n').count() + 1;
+        let line_start = before.rfind('\n').map(|p| p + 1).unwrap_or(0);
+        let c = offset - line_start + 1;
+        (ln, c)
       };
 
-      eprintln!("  {} {}{}", severity_str, message, loc);
+      let loc = if line_no > 0 { format!(":{}", line_no) } else { String::new() };
+
+      eprintln!(
+        "  {} [{}] {}{}",
+        severity_str, v.rule_id, message, loc
+      );
 
       if line_no > 0 && line_no <= lines.len() {
         let line_text = lines[line_no - 1];
@@ -110,6 +148,64 @@ fn print_pretty(violations: &[vue_scanner::scanner::Violation]) {
   }
 }
 
+#[derive(Serialize)]
+struct JsonViolation<'a> {
+  file: String,
+  rule_id: &'a str,
+  rule_name: &'a str,
+  severity: &'a str,
+  category: &'a str,
+  message: String,
+  help: Option<String>,
+  byte_offset: usize,
+  byte_length: usize,
+}
+
+fn print_json(violations: &[vue_scanner::scanner::Violation]) {
+  let json: Vec<JsonViolation<'_>> = violations
+    .iter()
+    .map(|v| JsonViolation {
+      file: v.file.display().to_string(),
+      rule_id: &v.rule_id,
+      rule_name: &v.rule_name,
+      severity: v.severity.as_str(),
+      category: match v.category {
+        vue_scanner::rules::Category::Security => "security",
+        vue_scanner::rules::Category::BestPractice => "best-practice",
+        vue_scanner::rules::Category::Performance => "performance",
+        vue_scanner::rules::Category::Accessibility => "accessibility",
+        vue_scanner::rules::Category::Architecture => "architecture",
+      },
+      message: v.diagnostic_message(),
+      help: v.diagnostic.help().map(|h| h.to_string()),
+      byte_offset: v.span_offset(),
+      byte_length: v.span_len(),
+    })
+    .collect();
+  println!("{}", serde_json::to_string_pretty(&json).unwrap());
+}
+
+fn print_sarif(violations: &[vue_scanner::scanner::Violation]) {
+  // SARIF needs source bytes for line/column. We read each unique file
+  // once and hand the (path, source) map to the SARIF builder.
+  let mut sources: std::collections::BTreeMap<PathBuf, String> = Default::default();
+  for v in violations {
+    if !sources.contains_key(&v.file) {
+      if let Ok(content) = std::fs::read_to_string(&v.file) {
+        sources.insert(v.file.clone(), content);
+      }
+    }
+  }
+  let log = sarif::build_sarif(violations, &sources);
+  println!("{}", serde_json::to_string_pretty(&log).unwrap());
+}
+
+fn print_minimal(violations: &[vue_scanner::scanner::Violation]) {
+  for v in violations {
+    eprintln!("{}: {}: {}", v.file.display(), v.severity, v.diagnostic_message());
+  }
+}
+
 fn main() {
   let cli = Cli::parse();
   let scanner = Scanner::new();
@@ -120,8 +216,8 @@ fn main() {
   }
 
   let enabled_rules = cli.rules.unwrap_or_default();
-  let mut total_violations = 0;
   let mut has_errors = false;
+  let mut all_violations: Vec<vue_scanner::scanner::Violation> = Vec::new();
 
   for path in &cli.paths {
     if !path.exists() {
@@ -132,25 +228,7 @@ fn main() {
 
     match scanner.scan_path(path, &enabled_rules) {
       Ok(violations) => {
-        match cli.format {
-          OutputFormat::Pretty => print_pretty(&violations),
-          OutputFormat::Json => {
-            for v in &violations {
-              println!(
-                "{{\"file\":\"{}\",\"rule\":\"{}\",\"message\":\"{}\"}}",
-                v.file.display(),
-                v.rule_name,
-                v.diagnostic
-              );
-            }
-          }
-          OutputFormat::Minimal => {
-            for v in &violations {
-              eprintln!("{}: {}", v.file.display(), v.diagnostic);
-            }
-          }
-        }
-        total_violations += violations.len();
+        all_violations.extend(violations);
       }
       Err(e) => {
         eprintln!("Error scanning {}: {}", path.display(), e);
@@ -158,6 +236,40 @@ fn main() {
       }
     }
   }
+
+  // Filter by category / min severity after the fact, so users can combine
+  // the filters.
+  let all_violations: Vec<vue_scanner::scanner::Violation> = all_violations
+    .into_iter()
+    .filter(|v| {
+      if let Some(cats) = &cli.category {
+        let cat = match v.category {
+          vue_scanner::rules::Category::Security => "security",
+          vue_scanner::rules::Category::BestPractice => "best-practice",
+          vue_scanner::rules::Category::Performance => "performance",
+          vue_scanner::rules::Category::Accessibility => "accessibility",
+          vue_scanner::rules::Category::Architecture => "architecture",
+        };
+        if !cats.iter().any(|c| c == cat) {
+          return false;
+        }
+      }
+      if let Some(min) = cli.min_severity {
+        if v.severity < min.as_vue_severity() {
+          return false;
+        }
+      }
+      true
+    })
+    .collect();
+
+  match cli.format {
+    OutputFormat::Pretty => print_pretty(&all_violations),
+    OutputFormat::Json => print_json(&all_violations),
+    OutputFormat::Sarif => print_sarif(&all_violations),
+    OutputFormat::Minimal => print_minimal(&all_violations),
+  }
+  let total_violations = all_violations.len();
 
   if cli.deny_warnings && total_violations > 0 {
     process::exit(1);

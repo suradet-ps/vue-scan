@@ -6,7 +6,8 @@ use thiserror::Error;
 
 use crate::context::ScanContext;
 use crate::parser::parse_sfc;
-use crate::rules::RuleRegistry;
+use crate::rules::{Category, RuleRegistry};
+use crate::severity::Severity;
 
 #[derive(Error, Diagnostic, Debug)]
 #[error("Could not read file `{path}`")]
@@ -22,6 +23,30 @@ pub struct Violation {
   pub file: PathBuf,
   pub diagnostic: Box<dyn Diagnostic>,
   pub rule_name: String,
+  /// Stable rule id (e.g. `vue/security/no-v-html`). Used for SARIF and JSON
+  /// output; `rule_name` is the short name kept for the legacy CLI flag.
+  pub rule_id: String,
+  pub severity: Severity,
+  pub category: Category,
+  pub span_offset: usize,
+  pub span_length: usize,
+}
+
+impl Violation {
+  /// Read the diagnostic's primary label and produce `(start, length)`. This
+  /// is the same offset the SARIF report uses, so JSON, SARIF, and pretty
+  /// output all line up.
+  pub fn span_offset(&self) -> usize {
+    self.span_offset
+  }
+
+  pub fn span_len(&self) -> usize {
+    self.span_length
+  }
+
+  pub fn diagnostic_message(&self) -> String {
+    self.diagnostic.to_string()
+  }
 }
 
 pub struct Scanner {
@@ -73,10 +98,16 @@ impl Scanner {
 
     for rule in &rules {
       for diagnostic in rule.check(&ctx) {
+        let (offset, length) = primary_span(diagnostic.as_ref());
         violations.push(Violation {
           file: path.to_path_buf(),
           diagnostic,
           rule_name: rule.name().to_string(),
+          rule_id: rule.id().as_str().to_string(),
+          severity: rule.severity(),
+          category: rule.category(),
+          span_offset: offset,
+          span_length: length,
         });
       }
     }
@@ -93,4 +124,18 @@ impl Default for Scanner {
   fn default() -> Self {
     Self::new()
   }
+}
+
+fn primary_span(d: &dyn Diagnostic) -> (usize, usize) {
+  let Some(labels) = d.labels() else {
+    return (0, 0);
+  };
+  for label in labels {
+    let span = label.inner();
+    if span.offset() == 0 && span.len() == 0 {
+      continue;
+    }
+    return (span.offset(), span.len());
+  }
+  (0, 0)
 }
