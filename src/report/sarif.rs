@@ -88,6 +88,16 @@ pub struct SarifResult {
   pub level: &'static str,
   pub message: SarifMessage,
   pub locations: Vec<SarifLocation>,
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub suppressions: Vec<SarifSuppression>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SarifSuppression {
+  pub kind: &'static str,
+  pub status: &'static str,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub justification: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -218,6 +228,15 @@ fn build_result(v: &Violation, rule_indices: &[RuleId], source: &str) -> SarifRe
     .unwrap_or(0);
   let (start_line, start_column, end_line, end_column) =
     byte_offset_to_line_col(source, v.span_offset(), v.span_len());
+  let suppressions = if v.ignored {
+    vec![SarifSuppression {
+      kind: "external",
+      status: "accepted",
+      justification: Some("inline `vuer-ignore` comment".to_string()),
+    }]
+  } else {
+    Vec::new()
+  };
   SarifResult {
     rule_id: v.rule_id.clone(),
     rule_index,
@@ -241,6 +260,7 @@ fn build_result(v: &Violation, rule_indices: &[RuleId], source: &str) -> SarifRe
         },
       },
     }],
+    suppressions,
   }
 }
 

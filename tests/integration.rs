@@ -8,7 +8,7 @@
 
 use std::path::PathBuf;
 
-use vuer::scanner::Scanner;
+use vuer::scanner::{ScanOptions, Scanner};
 
 fn fixture(name: &str) -> PathBuf {
   let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -18,9 +18,13 @@ fn fixture(name: &str) -> PathBuf {
 }
 
 fn scan(name: &str) -> Vec<vuer::scanner::Violation> {
+  scan_with_options(name, &ScanOptions::default())
+}
+
+fn scan_with_options(name: &str, options: &ScanOptions) -> Vec<vuer::scanner::Violation> {
   let scanner = Scanner::new();
   scanner
-    .scan_file(&fixture(name), &[])
+    .scan_file(&fixture(name), &[], options)
     .expect("scan should succeed")
 }
 
@@ -140,4 +144,66 @@ fn sarif_round_trip_includes_results_and_rules() {
   assert!(json.contains("vue/security/no-v-html"));
   assert!(json.contains("\"results\""));
   assert!(json.contains("\"rules\""));
+}
+
+#[test]
+fn inline_ignore_suppresses_violation() {
+  let violations = scan("with_ignores.vue");
+  // Two `v-html` in the template and two `innerHTML` writes in the script
+  // are all potential violations. The fixture has `// vuer-ignore` /
+  // `<!-- vuer-ignore -->` comments that silence one of each.
+  assert!(
+    violations.iter().any(|v| !v.ignored),
+    "expected at least one un-ignored violation, got: {:#?}",
+    violations
+  );
+  assert!(
+    violations.iter().any(|v| v.ignored),
+    "expected at least one ignored violation, got: {:#?}",
+    violations
+  );
+}
+
+#[test]
+fn no_ignores_flag_clears_suppression_marks() {
+  let defaults = ScanOptions::default();
+  let strict = ScanOptions { no_ignores: true };
+  let with_ignores = scan_with_options("with_ignores.vue", &defaults);
+  let strict_scan = scan_with_options("with_ignores.vue", &strict);
+  // `--no-ignores` does not change the count of findings; it just
+  // re-marks every previously-suppressed violation as actionable.
+  assert_eq!(
+    with_ignores.len(),
+    strict_scan.len(),
+    "counts should match: defaults={} strict={}",
+    with_ignores.len(),
+    strict_scan.len()
+  );
+  assert!(
+    with_ignores.iter().any(|v| v.ignored),
+    "defaults run should mark at least one violation as ignored"
+  );
+  assert!(
+    strict_scan.iter().all(|v| !v.ignored),
+    "with --no-ignores no violation should be marked as ignored"
+  );
+}
+
+#[test]
+fn ignored_violations_carry_sarif_suppression() {
+  use std::collections::BTreeMap;
+  use vuer::report::sarif::build_sarif;
+
+  let violations = scan("with_ignores.vue");
+  assert!(violations.iter().any(|v| v.ignored));
+  let source = std::fs::read_to_string(fixture("with_ignores.vue")).unwrap();
+  let mut sources = BTreeMap::new();
+  sources.insert(fixture("with_ignores.vue"), source);
+  let log = build_sarif(&violations, &sources);
+  let json = serde_json::to_string(&log).unwrap();
+  assert!(
+    json.contains("\"suppressions\""),
+    "SARIF should include suppressions array for ignored findings"
+  );
+  assert!(json.contains("\"kind\":\"external\""));
 }

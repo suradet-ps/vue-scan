@@ -116,6 +116,29 @@ Or only on at least `high` severity:
 vuer --min-severity high --deny-warnings src/
 ```
 
+### Suppressing individual findings
+
+Use a `vuer-ignore[...]` comment on the same line (or the line above) the
+finding to silence it. Both the short rule name (`no-v-html`) and the full
+stable id (`vue/security/no-v-html`) are accepted. The colon form
+(`vuer: ignore[...]`) is also recognised.
+
+```vue
+<template>
+  <div v-html="trusted">accepted</div>
+  <!-- vuer-ignore[no-v-html] -->
+  <div v-html="trusted">silenced by the previous-line comment</div>
+</template>
+
+<script setup>
+el.innerHTML = userInput  // vuer-ignore[no-inner-html]
+</script>
+```
+
+Use `--no-ignores` to disable every inline suppression and report what
+the linter would otherwise silence. This is the right flag for CI runs
+that want to see the *raw* signal.
+
 ## Available rules
 
 | Rule id | Severity | Category | Description |

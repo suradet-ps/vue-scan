@@ -7,7 +7,7 @@ use serde::Serialize;
 
 use vuer::report::sarif;
 use vuer::rules::RuleRegistry;
-use vuer::scanner::Scanner;
+use vuer::scanner::{ScanOptions, Scanner};
 
 #[derive(Parser)]
 #[command(
@@ -31,6 +31,12 @@ struct Cli {
 
   #[arg(long)]
   deny_warnings: bool,
+
+  /// Treat every `// vuer-ignore[...]` / `<!-- vuer-ignore[...] -->` comment
+  /// as a no-op and report everything the linter would otherwise suppress.
+  /// Useful in CI to see what is currently being silenced.
+  #[arg(long)]
+  no_ignores: bool,
 
   /// Filter rules by category (security, best-practice, performance, accessibility, architecture).
   #[arg(long, value_delimiter = ',')]
@@ -85,6 +91,7 @@ fn list_rules(registry: &RuleRegistry) {
   println!("\nUse --rules <rule1,rule2> to run specific rules.");
   println!("Use --category <cat1,cat2> to filter by category.");
   println!("Use --min-severity <level> to fail only on at least this severity.");
+  println!("Use --no-ignores to disable inline `vuer-ignore[...]` comments.");
 }
 
 fn print_pretty(violations: &[vuer::scanner::Violation]) {
@@ -130,8 +137,16 @@ fn print_pretty(violations: &[vuer::scanner::Violation]) {
       } else {
         String::new()
       };
+      let ignored_tag = if v.ignored {
+        " \x1b[90m(ignored)\x1b[0m"
+      } else {
+        ""
+      };
 
-      eprintln!("  {} [{}] {}{}", severity_str, v.rule_id, message, loc);
+      eprintln!(
+        "  {} [{}] {}{}{}",
+        severity_str, v.rule_id, message, loc, ignored_tag
+      );
 
       if line_no > 0 && line_no <= lines.len() {
         let line_text = lines[line_no - 1];
@@ -160,6 +175,7 @@ struct JsonViolation<'a> {
   help: Option<String>,
   byte_offset: usize,
   byte_length: usize,
+  ignored: bool,
 }
 
 fn print_json(violations: &[vuer::scanner::Violation]) {
@@ -181,6 +197,7 @@ fn print_json(violations: &[vuer::scanner::Violation]) {
       help: v.diagnostic.help().map(|h| h.to_string()),
       byte_offset: v.span_offset(),
       byte_length: v.span_len(),
+      ignored: v.ignored,
     })
     .collect();
   println!("{}", serde_json::to_string_pretty(&json).unwrap());
@@ -222,6 +239,9 @@ fn main() {
   }
 
   let enabled_rules = cli.rules.unwrap_or_default();
+  let options = ScanOptions {
+    no_ignores: cli.no_ignores,
+  };
   let mut has_errors = false;
   let mut all_violations: Vec<vuer::scanner::Violation> = Vec::new();
 
@@ -232,7 +252,7 @@ fn main() {
       continue;
     }
 
-    match scanner.scan_path(path, &enabled_rules) {
+    match scanner.scan_path(path, &enabled_rules, &options) {
       Ok(violations) => {
         all_violations.extend(violations);
       }
@@ -276,8 +296,12 @@ fn main() {
     OutputFormat::Minimal => print_minimal(&all_violations),
   }
   let total_violations = all_violations.len();
+  let ignored_count = all_violations.iter().filter(|v| v.ignored).count();
 
-  if cli.deny_warnings && total_violations > 0 {
+  // `deny_warnings` should never cause a clean run to fail, so a violation
+  // suppressed by `// vuer-ignore` is not a real warning.
+  let actionable_violations = total_violations - ignored_count;
+  if cli.deny_warnings && actionable_violations > 0 {
     process::exit(1);
   }
 
@@ -287,10 +311,15 @@ fn main() {
 
   if total_violations == 0 {
     eprintln!("\x1b[32mNo violations found.\x1b[0m");
-  } else {
+  } else if ignored_count == 0 {
     eprintln!(
       "\n\x1b[1;33m{} violation(s) found.\x1b[0m",
       total_violations
+    );
+  } else {
+    eprintln!(
+      "\n\x1b[1;33m{} violation(s) found ({} ignored).\x1b[0m",
+      total_violations, ignored_count
     );
   }
 }

@@ -1277,6 +1277,7 @@ dependencies = [
  "oxc_parser",
  "oxc_span",
  "oxc_syntax",
+ "regex",
  "rstest",
  "serde",
  "serde_json",

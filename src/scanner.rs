@@ -8,6 +8,7 @@ use crate::context::ScanContext;
 use crate::parser::parse_sfc;
 use crate::rules::{Category, RuleRegistry};
 use crate::severity::Severity;
+use crate::suppression::violation_is_ignored;
 
 #[derive(Error, Diagnostic, Debug)]
 #[error("Could not read file `{path}`")]
@@ -30,6 +31,9 @@ pub struct Violation {
   pub category: Category,
   pub span_offset: usize,
   pub span_length: usize,
+  /// True when the violation sits under a `// vuer-ignore[...]` (or HTML
+  /// equivalent) comment and `--no-ignores` is not set.
+  pub ignored: bool,
 }
 
 impl Violation {
@@ -49,6 +53,16 @@ impl Violation {
   }
 }
 
+/// Knobs that change how a scan interprets the input. The fields are passed
+/// through from the CLI; they let us add behaviour without expanding every
+/// `scan_*` signature forever.
+#[derive(Debug, Clone, Default)]
+pub struct ScanOptions {
+  /// When true, treat every inline `vuer-ignore` comment as a no-op. Useful
+  /// for "what would the linter say without any suppression?" runs in CI.
+  pub no_ignores: bool,
+}
+
 pub struct Scanner {
   registry: RuleRegistry,
 }
@@ -60,9 +74,14 @@ impl Scanner {
     }
   }
 
-  pub fn scan_path(&self, path: &Path, enabled_rules: &[String]) -> Result<Vec<Violation>, Report> {
+  pub fn scan_path(
+    &self,
+    path: &Path,
+    enabled_rules: &[String],
+    options: &ScanOptions,
+  ) -> Result<Vec<Violation>, Report> {
     if path.is_file() {
-      return self.scan_file(path, enabled_rules);
+      return self.scan_file(path, enabled_rules, options);
     }
 
     let mut violations = Vec::new();
@@ -76,7 +95,7 @@ impl Scanner {
       if entry.file_type().is_some_and(|ft| ft.is_file())
         && entry.path().extension().and_then(|e| e.to_str()) == Some("vue")
       {
-        let file_violations = self.scan_file(entry.path(), enabled_rules)?;
+        let file_violations = self.scan_file(entry.path(), enabled_rules, options)?;
         violations.extend(file_violations);
       }
     }
@@ -84,7 +103,12 @@ impl Scanner {
     Ok(violations)
   }
 
-  pub fn scan_file(&self, path: &Path, enabled_rules: &[String]) -> Result<Vec<Violation>, Report> {
+  pub fn scan_file(
+    &self,
+    path: &Path,
+    enabled_rules: &[String],
+    options: &ScanOptions,
+  ) -> Result<Vec<Violation>, Report> {
     let source = std::fs::read_to_string(path).map_err(|e| FileReadError {
       path: path.display().to_string(),
       source: e,
@@ -99,15 +123,20 @@ impl Scanner {
     for rule in &rules {
       for diagnostic in rule.check(&ctx) {
         let (offset, length) = primary_span(diagnostic.as_ref());
+        let rule_name = rule.name().to_string();
+        let rule_id = rule.id().as_str().to_string();
+        let ignored =
+          !options.no_ignores && violation_is_ignored(&ctx.source, offset, &rule_name, &rule_id);
         violations.push(Violation {
           file: path.to_path_buf(),
           diagnostic,
-          rule_name: rule.name().to_string(),
-          rule_id: rule.id().as_str().to_string(),
+          rule_name,
+          rule_id,
           severity: rule.severity(),
           category: rule.category(),
           span_offset: offset,
           span_length: length,
+          ignored,
         });
       }
     }

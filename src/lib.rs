@@ -5,4 +5,5 @@ pub mod rule_id;
 pub mod rules;
 pub mod scanner;
 pub mod severity;
+pub mod suppression;
 pub mod visitor;
