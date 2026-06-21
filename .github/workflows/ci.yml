@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@34e114876b0b4f9f9b15e1efe46c1f9ec3e91b34  # v4.3.1
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
           # zizmor's `artipacked` rule: don't let the GITHUB_TOKEN leak
           # into any artifact or cache.
