@@ -45,9 +45,13 @@ jobs:
         # ref would be marked "superfluous" by zizmor because the runner
         # already has rustup; pinning to a version is the explicit
         # reason to keep the action.
+        #
+        # 1.94.0 is the MSRV: every release of `oxc` we use requires
+        # rustc >= 1.94.0, and Cargo.toml's `rust-version` field
+        # enforces this on every `cargo` invocation.
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8  # stable
         with:
-          toolchain: 1.85.0
+          toolchain: 1.94.0
           components: rustfmt, clippy
 
       - name: Cache cargo registry & build
