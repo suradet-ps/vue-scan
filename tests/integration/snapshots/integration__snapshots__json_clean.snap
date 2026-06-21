@@ -1,6 +1,5 @@
 ---
 source: tests/integration/snapshots.rs
-assertion_line: 83
 expression: json
 ---
 []

@@ -1,11 +1,10 @@
 ---
 source: tests/integration/snapshots.rs
-assertion_line: 191
 expression: out.stdout
 ---
 [
   {
-    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "file": "<FIXTURE>/vulnerable.vue",
     "rule_id": "vue/security/no-v-html",
     "rule_name": "no-v-html",
     "severity": "critical",
@@ -17,7 +16,7 @@ expression: out.stdout
     "ignored": false
   },
   {
-    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "file": "<FIXTURE>/vulnerable.vue",
     "rule_id": "vue/security/no-dynamic-bind-src",
     "rule_name": "no-dynamic-bind-src",
     "severity": "high",
@@ -29,7 +28,7 @@ expression: out.stdout
     "ignored": false
   },
   {
-    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "file": "<FIXTURE>/vulnerable.vue",
     "rule_id": "vue/best-practice/no-inline-style",
     "rule_name": "no-inline-style",
     "severity": "low",
@@ -41,7 +40,7 @@ expression: out.stdout
     "ignored": false
   },
   {
-    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "file": "<FIXTURE>/vulnerable.vue",
     "rule_id": "vue/best-practice/no-watch-with-callback",
     "rule_name": "no-watch-with-callback",
     "severity": "low",

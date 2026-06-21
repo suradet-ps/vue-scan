@@ -1,33 +1,32 @@
 ---
 source: tests/integration/snapshots.rs
-assertion_line: 154
 expression: combined
 ---
 
-/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue
+<FIXTURE>/with_ignores.vue
 error[vue/security/no-v-html]: Unsafe `v-html` directive renders untrusted HTML
- --> /Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue:2:8
+ --> <FIXTURE>/with_ignores.vue:2:8
   |
 2 |   <div v-html="raw">flagged, no comment</div>
   |        ^^^^^^^^^^^^ here
   |
   = help: Rendering untrusted HTML can execute arbitrary JavaScript. Sanitise the input with DOMPurify (or an equivalent library), or use `v-text` / `{ }` interpolation instead.
 error[vue/security/no-v-html]: Unsafe `v-html` directive renders untrusted HTML
- --> /Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue:4:8
+ --> <FIXTURE>/with_ignores.vue:4:8
   |
 4 |   <div v-html="trusted">silenced by previous-line comment</div>
   |        ^^^^^^^^^^^^^^^^ (ignored)
   |
   = help: Rendering untrusted HTML can execute arbitrary JavaScript. Sanitise the input with DOMPurify (or an equivalent library), or use `v-text` / `{ }` interpolation instead.
 error[vue/security/no-inner-html]: `.innerHTML` assignment introduces a DOM XSS sink
-  --> /Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue:11:1
+  --> <FIXTURE>/with_ignores.vue:11:1
    |
 11 | el.innerHTML = raw  // will be flagged (no ignore)
    | ^^^^^^^^^^^^^^^^^^ here
    |
    = help: Setting `.innerHTML` from a dynamic value lets an attacker inject script tags and event handlers. Use `textContent` for plain text, or sanitise the value with DOMPurify before insertion.
 error[vue/security/no-inner-html]: `.innerHTML` assignment introduces a DOM XSS sink
-  --> /Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue:12:1
+  --> <FIXTURE>/with_ignores.vue:12:1
    |
 12 | el.innerHTML = trusted  // vuer-ignore[no-inner-html]
    | ^^^^^^^^^^^^^^^^^^^^^^ (ignored)

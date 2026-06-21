@@ -1,6 +1,5 @@
 ---
 source: tests/integration/snapshots.rs
-assertion_line: 205
 expression: out.stdout
 ---
 {
@@ -329,7 +328,7 @@ expression: out.stdout
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uri": "file://<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -355,7 +354,7 @@ expression: out.stdout
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uri": "file://<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -381,7 +380,7 @@ expression: out.stdout
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uri": "file://<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -407,7 +406,7 @@ expression: out.stdout
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uri": "file://<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {

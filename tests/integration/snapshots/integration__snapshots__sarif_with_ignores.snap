@@ -1,6 +1,5 @@
 ---
 source: tests/integration/snapshots.rs
-assertion_line: 116
 expression: json
 ---
 {
@@ -329,7 +328,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+                  "uri": "file://<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -355,7 +354,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+                  "uri": "file://<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -388,7 +387,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+                  "uri": "file://<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -414,7 +413,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+                  "uri": "file://<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {

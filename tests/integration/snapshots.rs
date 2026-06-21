@@ -53,9 +53,13 @@ fn scanner_sarif(fixture_name: &str) -> String {
 }
 
 fn manifest_filter() -> Vec<(&'static str, &'static str)> {
+  // Match the project root anywhere on the path: the user may have
+  // checked the repo into a path with one, two, or more intermediate
+  // segments between `/Users/` and `/vuer/`, so we use a non-greedy
+  // `.*?` rather than counting segments.
   vec![
-    (r"/Users/[^/]+/[^/]+/vuer/tests/fixtures/", "<FIXTURE>/"),
-    (r"/Users/[^/]+/[^/]+/vuer/", "<REPO>/"),
+    (r"/Users/.*?/vuer/tests/fixtures/", "<FIXTURE>/"),
+    (r"/Users/.*?/vuer/", "<REPO>/"),
   ]
 }
 
