@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@34e114876b0b4f9f9b15e1efe46c1f9ec3e91b34  # v4.3.1
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
         with:
           # zizmor's `artipacked` rule: don't let the GITHUB_TOKEN leak
           # into any artifact or cache.
@@ -45,13 +45,13 @@ jobs:
         # ref would be marked "superfluous" by zizmor because the runner
         # already has rustup; pinning to a version is the explicit
         # reason to keep the action.
-        uses: dtolnay/rust-toolchain@29eef336d9b25b0655e4db9d57da9b35c0ce1c87  # 1.85.0
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8  # stable
         with:
           toolchain: 1.85.0
           components: rustfmt, clippy
 
       - name: Cache cargo registry & build
-        uses: Swatinem/rust-cache@23869a5bd66c1f6096c9c1b1b6af2427d2c4f5b6  # v2.9.1
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: rustfmt
         run: cargo fmt --all -- --check
