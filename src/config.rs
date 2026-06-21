@@ -115,6 +115,14 @@ fn discover(start: &Path) -> Option<PathBuf> {
         return Some(candidate);
       }
     }
+    // Treat the nearest git root as the project boundary. vuer is a
+    // project-level linter, so we should never pick up a `vuer.yml`
+    // from a sibling project, the user's home, or a stray file at
+    // the filesystem root. The same pattern is used by zizmor
+    // (zizmor-core/zizmor `config/mod.rs:608-611`).
+    if dir.join(".git").exists() {
+      return None;
+    }
     match dir.parent() {
       Some(parent) => dir = parent,
       None => return None,
@@ -191,7 +199,12 @@ category:
 
   #[test]
   fn discover_returns_none_when_no_config_exists() {
+    // Drop a `.git` marker into the tempdir so the test is fully
+    // self-contained: the discover() boundary check stops here, so
+    // a stray `vuer.yml` in `/tmp`, `$HOME`, or `/` cannot make this
+    // test flaky.
     let dir = tempdir();
+    std::fs::create_dir(dir.join(".git")).unwrap();
     assert!(discover(&dir).is_none());
   }
 
