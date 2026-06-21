@@ -1,0 +1,7 @@
+---
+source: tests/integration/snapshots.rs
+assertion_line: 143
+expression: combined
+---
+
+No violations found.

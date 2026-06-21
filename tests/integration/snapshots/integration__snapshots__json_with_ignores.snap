@@ -1,0 +1,51 @@
+---
+source: tests/integration/snapshots.rs
+assertion_line: 94
+expression: json
+---
+[
+  {
+    "byte_length": 12,
+    "byte_offset": 18,
+    "category": "security",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+    "ignored": false,
+    "message": "Unsafe `v-html` directive renders untrusted HTML",
+    "rule_id": "vue/security/no-v-html",
+    "rule_name": "no-v-html",
+    "severity": "critical"
+  },
+  {
+    "byte_length": 16,
+    "byte_offset": 98,
+    "category": "security",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+    "ignored": true,
+    "message": "Unsafe `v-html` directive renders untrusted HTML",
+    "rule_id": "vue/security/no-v-html",
+    "rule_name": "no-v-html",
+    "severity": "critical"
+  },
+  {
+    "byte_length": 18,
+    "byte_offset": 240,
+    "category": "security",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+    "ignored": false,
+    "message": "`.innerHTML` assignment introduces a DOM XSS sink",
+    "rule_id": "vue/security/no-inner-html",
+    "rule_name": "no-inner-html",
+    "severity": "critical"
+  },
+  {
+    "byte_length": 22,
+    "byte_offset": 291,
+    "category": "security",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/with_ignores.vue",
+    "ignored": true,
+    "message": "`.innerHTML` assignment introduces a DOM XSS sink",
+    "rule_id": "vue/security/no-inner-html",
+    "rule_name": "no-inner-html",
+    "severity": "critical"
+  }
+]

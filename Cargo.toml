@@ -32,3 +32,5 @@ owo-colors = { version = "4", features = ["supports-colors"] }
 [dev-dependencies]
 tempfile = "3.27"
 rstest = "0.26"
+insta = { version = "1", features = ["filters"] }
+assert_cmd = "2"

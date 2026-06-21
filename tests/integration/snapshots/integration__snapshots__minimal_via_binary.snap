@@ -1,0 +1,6 @@
+---
+source: tests/integration/snapshots.rs
+assertion_line: 219
+expression: out.stdout
+---
+

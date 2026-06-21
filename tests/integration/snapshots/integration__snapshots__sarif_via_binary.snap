@@ -1,0 +1,428 @@
+---
+source: tests/integration/snapshots.rs
+assertion_line: 205
+expression: out.stdout
+---
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "vuer",
+          "information_uri": "https://github.com/suradet-ps/vuer",
+          "version": "0.1.0",
+          "rules": [
+            {
+              "id": "vue/security/no-v-html",
+              "name": "vue/security/no-v-html",
+              "short_description": {
+                "text": "Disallow `v-html` directive"
+              },
+              "full_description": {
+                "text": "Rendering untrusted HTML can execute arbitrary JavaScript."
+              },
+              "help": {
+                "text": "Sanitise with DOMPurify or use `v-text` / interpolation."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "critical"
+              }
+            },
+            {
+              "id": "vue/security/no-dynamic-bind-src",
+              "name": "vue/security/no-dynamic-bind-src",
+              "short_description": {
+                "text": "Disallow dynamic `src` binding"
+              },
+              "full_description": {
+                "text": "A dynamic `src` can load attacker-controlled resources."
+              },
+              "help": {
+                "text": "Validate and sanitise the URL against an allow-list."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "high"
+              }
+            },
+            {
+              "id": "vue/best-practice/no-inline-style",
+              "name": "vue/best-practice/no-inline-style",
+              "short_description": {
+                "text": "Disallow inline `style`"
+              },
+              "full_description": {
+                "text": "Inline styles bypass the cascade and are hard to maintain."
+              },
+              "help": {
+                "text": "Use a CSS class instead."
+              },
+              "default_configuration": {
+                "level": "note"
+              },
+              "properties": {
+                "category": "best-practice",
+                "security_severity": "low"
+              }
+            },
+            {
+              "id": "vue/best-practice/no-watch-with-callback",
+              "name": "vue/best-practice/no-watch-with-callback",
+              "short_description": {
+                "text": "Disallow `watch` with callback (memory leak risk)"
+              },
+              "full_description": {
+                "text": "`watch(source, cb)` returns a stop handle that is easy to forget to call."
+              },
+              "help": {
+                "text": "Prefer `watchEffect` or stop the handle in `onScopeDispose`."
+              },
+              "default_configuration": {
+                "level": "note"
+              },
+              "properties": {
+                "category": "best-practice",
+                "security_severity": "low"
+              }
+            },
+            {
+              "id": "vue/security/no-inner-html",
+              "name": "vue/security/no-inner-html",
+              "short_description": {
+                "text": "Disallow `el.innerHTML = ...`"
+              },
+              "full_description": {
+                "text": "Writing to `.innerHTML` lets attackers inject script tags."
+              },
+              "help": {
+                "text": "Use `textContent` for plain text or sanitise with DOMPurify."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "critical"
+              }
+            },
+            {
+              "id": "vue/security/no-document-write",
+              "name": "vue/security/no-document-write",
+              "short_description": {
+                "text": "Disallow `document.write`"
+              },
+              "full_description": {
+                "text": "`document.write` is a known XSS sink."
+              },
+              "help": {
+                "text": "Use `appendChild` or update via Vue reactivity instead."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "high"
+              }
+            },
+            {
+              "id": "vue/security/no-eval",
+              "name": "vue/security/no-eval",
+              "short_description": {
+                "text": "Disallow `eval` / `new Function`"
+              },
+              "full_description": {
+                "text": "Evaluating strings as code is RCE if any input is attacker-controlled."
+              },
+              "help": {
+                "text": "Refactor to a static expression or a lookup table."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "critical"
+              }
+            },
+            {
+              "id": "vue/security/no-dangerous-url",
+              "name": "vue/security/no-dangerous-url",
+              "short_description": {
+                "text": "Disallow dangerous URL schemes"
+              },
+              "full_description": {
+                "text": "`javascript:`, `data:text/html`, and `vbscript:` URLs execute code."
+              },
+              "help": {
+                "text": "Use `https?://` URLs or a router."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "critical"
+              }
+            },
+            {
+              "id": "vue/security/no-open-redirect",
+              "name": "vue/security/no-open-redirect",
+              "short_description": {
+                "text": "Disallow open redirect sinks"
+              },
+              "full_description": {
+                "text": "Forwarding user-controlled data to `location.*` enables open-redirect attacks."
+              },
+              "help": {
+                "text": "Validate the URL against an allow-list of hostnames."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "high"
+              }
+            },
+            {
+              "id": "vue/security/no-unsafe-localstorage",
+              "name": "vue/security/no-unsafe-localstorage",
+              "short_description": {
+                "text": "Disallow auth tokens in `localStorage`"
+              },
+              "full_description": {
+                "text": "Tokens in `localStorage` are reachable by any injected script."
+              },
+              "help": {
+                "text": "Prefer an `HttpOnly; Secure` cookie set by the server."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "high"
+              }
+            },
+            {
+              "id": "vue/security/no-unsafe-iframe",
+              "name": "vue/security/no-unsafe-iframe",
+              "short_description": {
+                "text": "Disallow `<iframe>` without `sandbox`"
+              },
+              "full_description": {
+                "text": "An `iframe` without `sandbox` inherits the embedding origin's capabilities."
+              },
+              "help": {
+                "text": "Add `sandbox=\"\"` (or an explicit allow-list)."
+              },
+              "default_configuration": {
+                "level": "warning"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "medium"
+              }
+            },
+            {
+              "id": "vue/security/no-postmessage-wildcard",
+              "name": "vue/security/no-postmessage-wildcard",
+              "short_description": {
+                "text": "Disallow `postMessage(..., '*')`"
+              },
+              "full_description": {
+                "text": "A wildcard `targetOrigin` lets a malicious site that has navigated the target window intercept the message."
+              },
+              "help": {
+                "text": "Pin the receiver's exact origin (e.g. `https://app.example.com`) or use `/` for same-origin delivery."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "high"
+              }
+            },
+            {
+              "id": "vue/security/no-window-open-blank-noopener",
+              "name": "vue/security/no-window-open-blank-noopener",
+              "short_description": {
+                "text": "Require `noopener` on `window.open(..., '_blank', ...)`"
+              },
+              "full_description": {
+                "text": "Without `noopener`, the opened tab can call `window.opener.location = ...` and phish the originating page (reverse tabnabbing)."
+              },
+              "help": {
+                "text": "Add `noopener` (or `noreferrer`) to the `windowFeatures` string."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "high"
+              }
+            },
+            {
+              "id": "vue/security/no-fetch-without-timeout",
+              "name": "vue/security/no-fetch-without-timeout",
+              "short_description": {
+                "text": "Require an `AbortSignal` on `fetch`"
+              },
+              "full_description": {
+                "text": "A `fetch` without a signal can hang indefinitely and exhaust connection pools."
+              },
+              "help": {
+                "text": "Pass `signal: ctrl.signal` from an `AbortController` and call `ctrl.abort()` on timeout / unmount."
+              },
+              "default_configuration": {
+                "level": "error"
+              },
+              "properties": {
+                "category": "security",
+                "security_severity": "high"
+              }
+            },
+            {
+              "id": "vue/best-practice/v-for-missing-key",
+              "name": "vue/best-practice/v-for-missing-key",
+              "short_description": {
+                "text": "Require `:key` on `v-for`"
+              },
+              "full_description": {
+                "text": "Without a stable `:key`, Vue falls back to index-based reconciliation."
+              },
+              "help": {
+                "text": "Add `:key=\"item.id\"`."
+              },
+              "default_configuration": {
+                "level": "warning"
+              },
+              "properties": {
+                "category": "best-practice",
+                "security_severity": "medium"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "vue/security/no-v-html",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Unsafe `v-html` directive renders untrusted HTML"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 10,
+                  "endLine": 3,
+                  "endColumn": 28,
+                  "byteOffset": 28,
+                  "byteLength": 18
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "vue/security/no-dynamic-bind-src",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "Dynamic `src` binding can load untrusted resources"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 4,
+                  "startColumn": 10,
+                  "endLine": 4,
+                  "endColumn": 25,
+                  "byteOffset": 70,
+                  "byteLength": 15
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "vue/best-practice/no-inline-style",
+          "ruleIndex": 2,
+          "level": "note",
+          "message": {
+            "text": "Inline styles can hurt performance and maintainability"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 10,
+                  "endLine": 5,
+                  "endColumn": 46,
+                  "byteOffset": 96,
+                  "byteLength": 36
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "vue/best-practice/no-watch-with-callback",
+          "ruleIndex": 3,
+          "level": "note",
+          "message": {
+            "text": "`watch` with a callback can leak memory if not cleaned up"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "file:///Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 1,
+                  "endLine": 17,
+                  "endColumn": 3,
+                  "byteOffset": 292,
+                  "byteLength": 69
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

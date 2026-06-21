@@ -1,0 +1,51 @@
+---
+source: tests/integration/snapshots.rs
+assertion_line: 72
+expression: json
+---
+[
+  {
+    "byte_length": 18,
+    "byte_offset": 28,
+    "category": "security",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "ignored": false,
+    "message": "Unsafe `v-html` directive renders untrusted HTML",
+    "rule_id": "vue/security/no-v-html",
+    "rule_name": "no-v-html",
+    "severity": "critical"
+  },
+  {
+    "byte_length": 15,
+    "byte_offset": 70,
+    "category": "security",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "ignored": false,
+    "message": "Dynamic `src` binding can load untrusted resources",
+    "rule_id": "vue/security/no-dynamic-bind-src",
+    "rule_name": "no-dynamic-bind-src",
+    "severity": "high"
+  },
+  {
+    "byte_length": 36,
+    "byte_offset": 96,
+    "category": "bestpractice",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "ignored": false,
+    "message": "Inline styles can hurt performance and maintainability",
+    "rule_id": "vue/best-practice/no-inline-style",
+    "rule_name": "no-inline-style",
+    "severity": "low"
+  },
+  {
+    "byte_length": 69,
+    "byte_offset": 292,
+    "category": "bestpractice",
+    "file": "/Users/suradetpratomsak/Desktop/suradet-ps/vuer/tests/fixtures/vulnerable.vue",
+    "ignored": false,
+    "message": "`watch` with a callback can leak memory if not cleaned up",
+    "rule_id": "vue/best-practice/no-watch-with-callback",
+    "rule_name": "no-watch-with-callback",
+    "severity": "low"
+  }
+]
