@@ -328,7 +328,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/vulnerable.vue",
+<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -354,7 +354,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/vulnerable.vue",
+<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -380,7 +380,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/vulnerable.vue",
+<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -406,7 +406,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/vulnerable.vue",
+<FIXTURE>/vulnerable.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {

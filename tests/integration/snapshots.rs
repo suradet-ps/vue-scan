@@ -53,13 +53,19 @@ fn scanner_sarif(fixture_name: &str) -> String {
 }
 
 fn manifest_filter() -> Vec<(&'static str, &'static str)> {
-  // Match the project root anywhere on the path: the user may have
-  // checked the repo into a path with one, two, or more intermediate
-  // segments between `/Users/` and `/vuer/`, so we use a non-greedy
-  // `.*?` rather than counting segments.
+  // Match the project root by anchoring on the project name
+  // (`vuer`) rather than the OS-specific prefix. This makes the
+  // snapshots portable across:
+  //   * macOS local dev:  /Users/<user>/.../vuer/tests/fixtures/...
+  //   * Linux CI:        /home/runner/work/vuer/vuer/tests/fixtures/...
+  //   * Docker mounts:   /work/vuer/tests/fixtures/...
+  //   * arbitrary other: /anywhere/vuer/tests/fixtures/...
+  // The non-greedy `.*?` matches the shortest prefix, so a path
+  // like `/tmp/vuer-archive/vuer/x.vue` still replaces the
+  // outermost `/vuer/` and keeps the rest intact.
   vec![
-    (r"/Users/.*?/vuer/tests/fixtures/", "<FIXTURE>/"),
-    (r"/Users/.*?/vuer/", "<REPO>/"),
+    (r".*?/vuer/tests/fixtures/", "<FIXTURE>/"),
+    (r".*?/vuer/", "<REPO>/"),
   ]
 }
 

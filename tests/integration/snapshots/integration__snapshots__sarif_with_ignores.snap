@@ -328,7 +328,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/with_ignores.vue",
+<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -354,7 +354,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/with_ignores.vue",
+<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -387,7 +387,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/with_ignores.vue",
+<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
@@ -413,7 +413,7 @@ expression: json
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": "file://<FIXTURE>/with_ignores.vue",
+<FIXTURE>/with_ignores.vue",
                   "uriBaseId": "%SRCROOT%"
                 },
                 "region": {
