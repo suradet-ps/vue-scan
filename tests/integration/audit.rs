@@ -4,6 +4,8 @@
 //! that a failure points at a single rule, not at "the scanner". The
 //! fixtures live in `tests/fixtures/`.
 
+use std::path::PathBuf;
+
 use vuer::scanner::{ScanOptions, Scanner};
 
 use crate::common::fixture;
@@ -415,4 +417,172 @@ fn binary_no_ignores_keeps_ignored_violations_visible() {
     strict_ignored, 0,
     "with --no-ignores, nothing should be marked as ignored"
   );
+}
+
+// ---------------------------------------------------------------------
+// Config file (Batch 4). Each test writes a temp `.vuerc.yml` next to
+// a fixture, runs vuer, then asserts on the resulting JSON.
+// ---------------------------------------------------------------------
+
+#[test]
+fn config_disables_named_rule() {
+  use crate::common::Vuer;
+  use std::collections::BTreeMap;
+
+  let dir = make_temp_dir("vuer-config-disable");
+  std::fs::write(dir.join("vuer.yml"), "disable:\n  - no-inline-style\n").unwrap();
+  std::fs::copy(
+    fixture("vulnerable_full.vue"),
+    dir.join("vulnerable_full.vue"),
+  )
+  .unwrap();
+
+  let out = Vuer::new().format("json").input(&dir).run();
+  let json: serde_json::Value = serde_json::from_str(&out.stdout).unwrap();
+  let arr = json.as_array().unwrap();
+  for v in arr {
+    assert_ne!(
+      v["rule_id"], "vue/best-practice/no-inline-style",
+      "no-inline-style should be disabled by the config"
+    );
+  }
+  assert!(!arr.is_empty(), "other rules should still fire");
+}
+
+#[test]
+fn config_min_severity_filters_output() {
+  use crate::common::Vuer;
+
+  let dir = make_temp_dir("vuer-config-severity");
+  std::fs::write(dir.join("vuer.yml"), "min-severity: critical\n").unwrap();
+  std::fs::copy(
+    fixture("vulnerable_full.vue"),
+    dir.join("vulnerable_full.vue"),
+  )
+  .unwrap();
+
+  let out = Vuer::new().format("json").input(&dir).run();
+  let json: serde_json::Value = serde_json::from_str(&out.stdout).unwrap();
+  for v in json.as_array().unwrap() {
+    assert_eq!(
+      v["severity"], "critical",
+      "only critical should pass with min-severity=critical, got: {v}"
+    );
+  }
+}
+
+#[test]
+fn config_category_filters_output() {
+  use crate::common::Vuer;
+
+  let dir = make_temp_dir("vuer-config-category");
+  std::fs::write(dir.join("vuer.yml"), "category:\n  - security\n").unwrap();
+  std::fs::copy(
+    fixture("vulnerable_full.vue"),
+    dir.join("vulnerable_full.vue"),
+  )
+  .unwrap();
+
+  let out = Vuer::new().format("json").input(&dir).run();
+  let json: serde_json::Value = serde_json::from_str(&out.stdout).unwrap();
+  for v in json.as_array().unwrap() {
+    assert_eq!(v["category"], "security");
+  }
+}
+
+#[test]
+fn config_invalid_yaml_logs_warning_and_continues() {
+  use crate::common::Vuer;
+
+  let dir = make_temp_dir("vuer-config-invalid");
+  std::fs::write(dir.join("vuer.yml"), "this is: not: valid: yaml: at all\n").unwrap();
+  std::fs::copy(
+    fixture("vulnerable_full.vue"),
+    dir.join("vulnerable_full.vue"),
+  )
+  .unwrap();
+
+  let out = Vuer::new().format("json").input(&dir).run();
+  assert!(out.success(), "vuer should not crash on broken config");
+  assert!(
+    out.stderr.contains("warning:") && out.stderr.contains("could not parse"),
+    "stderr should mention the broken config: {}",
+    out.stderr
+  );
+  // The run continues with the default config (no disable, no severity
+  // filter), so we expect to see the full set of findings.
+  let json: serde_json::Value = serde_json::from_str(&out.stdout).unwrap();
+  assert!(!json.as_array().unwrap().is_empty());
+}
+
+#[test]
+fn config_cli_overrides_config() {
+  use crate::common::Vuer;
+
+  let dir = make_temp_dir("vuer-config-override");
+  // Config says medium; CLI says critical. The higher (more
+  // restrictive) one should win.
+  std::fs::write(dir.join("vuer.yml"), "min-severity: medium\n").unwrap();
+  std::fs::copy(
+    fixture("vulnerable_full.vue"),
+    dir.join("vulnerable_full.vue"),
+  )
+  .unwrap();
+
+  let out = Vuer::new()
+    .format("json")
+    .input(&dir)
+    .min_severity("critical")
+    .run();
+  let json: serde_json::Value = serde_json::from_str(&out.stdout).unwrap();
+  for v in json.as_array().unwrap() {
+    assert_eq!(v["severity"], "critical");
+  }
+}
+
+#[test]
+fn no_config_flag_skips_discovery() {
+  use crate::common::Vuer;
+
+  let dir = make_temp_dir("vuer-config-skip");
+  // Config in the dir would disable a rule; --no-config should skip it
+  // so the rule still fires.
+  std::fs::write(dir.join("vuer.yml"), "disable:\n  - no-v-html\n").unwrap();
+  std::fs::copy(
+    fixture("vulnerable_full.vue"),
+    dir.join("vulnerable_full.vue"),
+  )
+  .unwrap();
+
+  let with_config = Vuer::new().format("json").input(&dir).run();
+  let without_config = Vuer::new().format("json").input(&dir).no_config().run();
+
+  let with: serde_json::Value = serde_json::from_str(&with_config.stdout).unwrap();
+  let without: serde_json::Value = serde_json::from_str(&without_config.stdout).unwrap();
+
+  let with_v_html = with
+    .as_array()
+    .unwrap()
+    .iter()
+    .filter(|v| v["rule_id"] == "vue/security/no-v-html")
+    .count();
+  let without_v_html = without
+    .as_array()
+    .unwrap()
+    .iter()
+    .filter(|v| v["rule_id"] == "vue/security/no-v-html")
+    .count();
+  assert_eq!(with_v_html, 0, "config should disable no-v-html");
+  assert!(without_v_html > 0, "--no-config should re-enable no-v-html");
+}
+
+fn make_temp_dir(label: &str) -> PathBuf {
+  let nanos = std::time::SystemTime::now()
+    .duration_since(std::time::UNIX_EPOCH)
+    .unwrap()
+    .as_nanos();
+  let pid = std::process::id() as u128;
+  let p = std::env::temp_dir().join(format!("vuer-{label}-{pid}-{nanos}"));
+  std::fs::create_dir_all(&p).unwrap();
+  p
 }

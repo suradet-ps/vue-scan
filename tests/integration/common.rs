@@ -102,6 +102,11 @@ impl Vuer {
   }
 
   #[must_use]
+  pub fn no_config(self) -> Self {
+    self.arg("--no-config")
+  }
+
+  #[must_use]
   pub fn expect_failure(mut self, code: i32) -> Self {
     self.expect_failure = Some(code);
     self

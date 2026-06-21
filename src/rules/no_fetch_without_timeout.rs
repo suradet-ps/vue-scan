@@ -83,7 +83,7 @@ impl Rule for NoFetchWithoutTimeout {
     Category::Security
   }
 
-  fn check(&self, ctx: &ScanContext) -> Vec<Box<dyn Diagnostic>> {
+  fn check(&self, ctx: &ScanContext) -> Vec<Box<dyn Diagnostic + Send + Sync>> {
     let mut violations = Vec::new();
     let Some(script) = ctx.script.as_ref() else {
       return violations;
@@ -102,7 +102,7 @@ impl Rule for NoFetchWithoutTimeout {
 }
 
 struct FetchWithoutTimeoutFinder<'a, 'b> {
-  hits: &'a mut Vec<Box<dyn Diagnostic>>,
+  hits: &'a mut Vec<Box<dyn Diagnostic + Send + Sync>>,
   named_source: &'b NamedSource<String>,
   script_offset: usize,
 }
@@ -160,7 +160,7 @@ mod tests {
   use super::*;
   use crate::parser::parse_sfc;
 
-  fn scan(source: &str) -> Vec<Box<dyn Diagnostic>> {
+  fn scan(source: &str) -> Vec<Box<dyn Diagnostic + Send + Sync>> {
     let mut ctx = ScanContext::new("test.vue".into(), source.to_string());
     parse_sfc(&mut ctx);
     NoFetchWithoutTimeout.check(&ctx)

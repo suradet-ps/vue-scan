@@ -8,6 +8,7 @@ use clap::{Parser, ValueEnum};
 use owo_colors::OwoColorize;
 use serde::Serialize;
 
+use vuer::config::Config;
 use vuer::report::sarif;
 use vuer::rules::RuleRegistry;
 use vuer::scanner::{ScanOptions, Scanner};
@@ -40,6 +41,12 @@ struct Cli {
   /// Useful in CI to see what is currently being silenced.
   #[arg(long)]
   no_ignores: bool,
+
+  /// Skip discovery of `.vuerc.yml` / `vuer.yml`. The CLI flags alone
+  /// drive the run, which is the right behaviour for CI scripts that
+  /// want a hermetic execution.
+  #[arg(long)]
+  no_config: bool,
 
   /// Filter rules by category (security, best-practice, performance, accessibility, architecture).
   #[arg(long, value_delimiter = ',')]
@@ -77,6 +84,17 @@ impl MinSeverity {
       Self::High => Severity::High,
       Self::Critical => Severity::Critical,
     }
+  }
+}
+
+fn parse_severity(s: &str) -> Option<vuer::severity::Severity> {
+  match s.to_ascii_lowercase().as_str() {
+    "info" => Some(vuer::severity::Severity::Info),
+    "low" => Some(vuer::severity::Severity::Low),
+    "medium" => Some(vuer::severity::Severity::Medium),
+    "high" => Some(vuer::severity::Severity::High),
+    "critical" => Some(vuer::severity::Severity::Critical),
+    _ => None,
   }
 }
 
@@ -228,7 +246,52 @@ fn main() {
     return;
   }
 
-  let enabled_rules = cli.rules.unwrap_or_default();
+  // Load `.vuerc.yml` / `vuer.yml` from the cwd (or the first path, if
+  // it points at a directory). The CLI flags are layered on top of the
+  // config below; --no-config skips the discovery entirely.
+  let config = if cli.no_config {
+    Config::default()
+  } else {
+    let start = cli
+      .paths
+      .first()
+      .cloned()
+      .unwrap_or_else(|| PathBuf::from("."));
+    let outcome = Config::load_from(&start);
+    if let Some(source) = &outcome.source {
+      eprintln!("{} {}", "config:".bright_black(), source.display());
+    }
+    if let Some(warning) = &outcome.warning {
+      eprintln!("{} {}", "warning:".yellow().bold(), warning);
+    }
+    outcome.config
+  };
+
+  // Enabled rules: CLI `--rules` narrows the registry to the named
+  // rules; config `disable` further subtracts from the result.
+  let enabled_rules_from_cli: Vec<String> = cli.rules.clone().unwrap_or_default();
+  let enabled_rules: Vec<String> = scanner
+    .registry()
+    .get_all()
+    .iter()
+    .map(|r| r.name().to_string())
+    .filter(|name| {
+      if !enabled_rules_from_cli.is_empty() && !enabled_rules_from_cli.contains(name) {
+        return false;
+      }
+      if config.disable.iter().any(|d| {
+        d == name
+          || scanner
+            .registry()
+            .get_by_name(name)
+            .is_some_and(|r| d == r.id().as_str())
+      }) {
+        return false;
+      }
+      true
+    })
+    .collect();
+
   let options = ScanOptions {
     no_ignores: cli.no_ignores,
   };
@@ -253,12 +316,18 @@ fn main() {
     }
   }
 
-  // Filter by category / min severity after the fact, so users can combine
-  // the filters.
+  // Filter by category / min severity. CLI wins, with the config filling
+  // in whatever the user did not set on the command line.
+  let effective_category: Option<Vec<String>> = cli.category.clone().or(config.category);
+  let effective_min_severity: Option<vuer::severity::Severity> = cli
+    .min_severity
+    .map(|s| s.as_vuer_severity())
+    .or_else(|| config.min_severity.as_deref().and_then(parse_severity));
+
   let all_violations: Vec<vuer::scanner::Violation> = all_violations
     .into_iter()
     .filter(|v| {
-      if let Some(cats) = &cli.category {
+      if let Some(cats) = &effective_category {
         let cat = match v.category {
           vuer::rules::Category::Security => "security",
           vuer::rules::Category::BestPractice => "best-practice",
@@ -270,8 +339,8 @@ fn main() {
           return false;
         }
       }
-      if let Some(min) = cli.min_severity {
-        if v.severity < min.as_vuer_severity() {
+      if let Some(min) = effective_min_severity {
+        if v.severity < min {
           return false;
         }
       }

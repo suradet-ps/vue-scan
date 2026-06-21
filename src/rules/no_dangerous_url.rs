@@ -56,7 +56,7 @@ impl Rule for NoDangerousUrl {
     Category::Security
   }
 
-  fn check(&self, ctx: &ScanContext) -> Vec<Box<dyn Diagnostic>> {
+  fn check(&self, ctx: &ScanContext) -> Vec<Box<dyn Diagnostic + Send + Sync>> {
     let mut violations = Vec::new();
     let Some(root) = ctx.template_ast.as_ref() else {
       return violations;
@@ -124,7 +124,7 @@ mod tests {
   use super::*;
   use crate::parser::parse_sfc;
 
-  fn scan(template: &str) -> Vec<Box<dyn Diagnostic>> {
+  fn scan(template: &str) -> Vec<Box<dyn Diagnostic + Send + Sync>> {
     let source = format!("<template>\n{template}\n</template>");
     let mut ctx = ScanContext::new("test.vue".into(), source);
     parse_sfc(&mut ctx);

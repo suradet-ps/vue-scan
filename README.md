@@ -166,6 +166,47 @@ output is piped to a file, when stdout is not a TTY, or when
 `NO_COLOR=1` is set in the environment. Set `FORCE_COLOR=1` to force
 them on for CI logs.
 
+## Configuration
+
+Drop a `.vuerc.yml` (or `vuer.yml`) at the project root to set
+project-wide defaults. The first one found walking up from the scan
+path is loaded.
+
+```yaml
+# .vuerc.yml — every field is optional.
+
+# Disable rules by short name or full stable id.
+disable:
+  - no-v-html
+  - vue/security/no-eval
+
+# Only show findings at this severity or higher.
+# Allowed: info, low, medium, high, critical
+min-severity: medium
+
+# Only show findings whose category is in this list.
+# Allowed: security, best-practice, performance, accessibility, architecture
+category:
+  - security
+  - best-practice
+```
+
+CLI flags layer on top of the config: `--rules` is an enable-list
+that further narrows the result, `--min-severity` and `--category`
+override the config when set, and `--no-config` skips discovery
+entirely (handy for hermetic CI runs).
+
+Unknown keys are rejected (`deny_unknown_fields`), so a typo like
+`min-sev: high` will print a parse warning and fall back to the
+default config. The run is never blocked by a broken config file.
+
+## Performance
+
+`vuer` walks the directory tree single-threaded (the work is just path
+filtering + `.gitignore` checks) and then fans out the per-file
+parsing across the rayon thread pool. On a large Vue monorepo this
+gives a near-linear speedup with the number of cores.
+
 ## Available rules
 
 | Rule id | Severity | Category | Description |

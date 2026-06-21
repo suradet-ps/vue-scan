@@ -1,7 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use ignore::WalkBuilder;
-use miette::{Diagnostic, IntoDiagnostic, Report};
+use ignore::{DirEntry, WalkBuilder};
+use miette::{Diagnostic, Report};
+use rayon::prelude::*;
 use thiserror::Error;
 
 use crate::context::ScanContext;
@@ -22,7 +23,11 @@ pub struct FileReadError {
 #[derive(Debug)]
 pub struct Violation {
   pub file: PathBuf,
-  pub diagnostic: Box<dyn Diagnostic>,
+  // The `Send + Sync` bound lets the scanner parallelise file scans
+  // across rayon workers: every rule's diagnostic struct is plain data
+  // (it only borrows from the rule's `Allocator` for the lifetime of
+  // the `scan_file` call, which is `'static` by construction).
+  pub diagnostic: Box<dyn Diagnostic + Send + Sync>,
   pub rule_name: String,
   /// Stable rule id (e.g. `vue/security/no-v-html`). Used for SARIF and JSON
   /// output; `rule_name` is the short name kept for the legacy CLI flag.
@@ -84,23 +89,31 @@ impl Scanner {
       return self.scan_file(path, enabled_rules, options);
     }
 
-    let mut violations = Vec::new();
+    // Walk the directory tree first (single-threaded, but cheap — ignore is
+    // just path walking + gitignore checks), then fan out the actual
+    // parsing across rayon workers. This keeps thread-pool pressure low
+    // for shallow trees and gives N-core speedup for big monorepos.
     let walker = WalkBuilder::new(path)
       .hidden(false)
       .git_ignore(true)
       .build();
 
-    for entry in walker {
-      let entry = entry.into_diagnostic()?;
-      if entry.file_type().is_some_and(|ft| ft.is_file())
-        && entry.path().extension().and_then(|e| e.to_str()) == Some("vue")
-      {
-        let file_violations = self.scan_file(entry.path(), enabled_rules, options)?;
-        violations.extend(file_violations);
-      }
-    }
+    let entries: Vec<DirEntry> = walker
+      .filter_map(Result::ok)
+      .filter(|e| e.file_type().is_some_and(|ft| ft.is_file()))
+      .filter(|e| e.path().extension().and_then(|ext| ext.to_str()) == Some("vue"))
+      .collect();
 
-    Ok(violations)
+    let per_file: Vec<Result<Vec<Violation>, Report>> = entries
+      .par_iter()
+      .map(|entry| self.scan_file(entry.path(), enabled_rules, options))
+      .collect();
+
+    let mut all = Vec::new();
+    for result in per_file {
+      all.extend(result?);
+    }
+    Ok(all)
   }
 
   pub fn scan_file(
@@ -155,7 +168,7 @@ impl Default for Scanner {
   }
 }
 
-fn primary_span(d: &dyn Diagnostic) -> (usize, usize) {
+fn primary_span(d: &(dyn Diagnostic + Send + Sync)) -> (usize, usize) {
   let Some(labels) = d.labels() else {
     return (0, 0);
   };

@@ -75,7 +75,11 @@ pub trait Rule: Send + Sync {
 
   /// The actual analysis. Receives an immutable `ScanContext` and returns
   /// zero or more diagnostics.
-  fn check(&self, ctx: &ScanContext) -> Vec<Box<dyn Diagnostic>>;
+  ///
+  /// The `Send + Sync` bound on the returned diagnostics lets the
+  /// scanner parallelise per-file work across rayon workers (see
+  /// `scanner::Scanner::scan_path`).
+  fn check(&self, ctx: &ScanContext) -> Vec<Box<dyn Diagnostic + Send + Sync>>;
 }
 
 pub struct RuleRegistry {

@@ -23,11 +23,13 @@ oxc_syntax = "0.136"
 oxc_diagnostics = "0.136"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9"
 atty = "0.2"
 regex = "1.10"
 annotate-snippets = "0.12"
 anstream = "0.6"
 owo-colors = { version = "4", features = ["supports-colors"] }
+rayon = "1.10"
 
 [dev-dependencies]
 tempfile = "3.27"
